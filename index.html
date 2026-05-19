@@ -573,14 +573,18 @@
   body.is-plan-modal #screen-campaigns,
   body.is-plan-modal #screen-ai-confirm {
     position:fixed; z-index:120;
-    top:30px; left:24px; right:24px; bottom:30px;
-    margin:0 auto;
-    width:auto; max-width:1100px;
-    overflow-y:auto;
+    top:50%; left:50%;
+    width:calc(100% - 48px); max-width:760px;
+    max-height:calc(100vh - 60px); overflow-y:auto;
     background:var(--surface-1); border:1px solid var(--border);
     border-radius:var(--r-xl); box-shadow:var(--sh-xl);
     padding:32px 28px 24px;
-    transform:none !important;
+    transform:translate(-50%, -50%) !important;
+    animation:rise .22s cubic-bezier(.34,1.2,.64,1) both;
+  }
+  /* Disable the fadeUp transform animation that conflicts with centering */
+  body.is-plan-modal #screen-campaigns.active,
+  body.is-plan-modal #screen-ai-confirm.active {
     animation:rise .22s cubic-bezier(.34,1.2,.64,1) both;
   }
   body.is-plan-modal #screen-campaigns .page-header,
@@ -820,6 +824,55 @@
     border-radius:var(--r-lg); padding:18px;
     box-shadow:var(--sh-xs);
   }
+  .comments-list {
+    display:flex; flex-direction:column; gap:10px;
+    margin-bottom:14px;
+  }
+  .comments-list:empty { display:none; }
+  .comment-item {
+    display:flex; gap:12px;
+    padding:12px 14px; border-radius:var(--r-md);
+    background:var(--n-50); border:1px solid var(--border);
+    animation:fadeUp .18s ease-out both;
+  }
+  .comment-avatar {
+    width:32px; height:32px; border-radius:50%; flex-shrink:0;
+    background:linear-gradient(135deg, var(--brand-500), var(--brand-700));
+    color:#fff; font-size:13px; font-weight:600;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .comment-body { flex:1; min-width:0; }
+  .comment-head {
+    display:flex; align-items:center; gap:10px;
+    margin-bottom:4px; font-size:12px;
+  }
+  .comment-author { font-weight:600; color:var(--text); }
+  .comment-time { color:var(--text-muted); }
+  .comment-text {
+    font-size:14px; color:var(--text); line-height:1.5;
+    white-space:pre-wrap; word-break:break-word;
+  }
+  .comment-remove {
+    background:transparent; border:none; cursor:pointer;
+    color:var(--text-muted); padding:4px; border-radius:var(--r-xs);
+    margin-left:auto; opacity:0; transition:opacity .12s, background .12s, color .12s;
+  }
+  .comment-item:hover .comment-remove { opacity:1; }
+  .comment-remove:hover { background:var(--danger-50); color:var(--danger-600); }
+  .comment-remove svg { width:14px; height:14px; }
+  .comments-empty {
+    padding:20px 12px; text-align:center;
+    font-size:13px; color:var(--text-muted);
+    border:1px dashed var(--border); border-radius:var(--r-md);
+    margin-bottom:14px;
+  }
+  .comments-composer {
+    display:flex; gap:10px; align-items:flex-end;
+  }
+  .comments-composer .form-textarea {
+    flex:1; min-height:42px; resize:vertical;
+  }
+  .comments-composer .btn { flex-shrink:0; height:42px; }
   .goal-detail-card-label {
     font-size:11px; font-weight:600; color:var(--text-muted);
     text-transform:uppercase; letter-spacing:0.04em;
@@ -1135,6 +1188,14 @@
     max-width:560px; margin:14px auto 0; text-align:center;
     line-height:1.5;
   }
+  .ai-skip-link {
+    background:transparent; border:none; padding:0;
+    color:var(--brand-700); font-weight:600; cursor:pointer;
+    font-family:inherit; font-size:inherit;
+    margin-left:6px;
+    transition:color .12s;
+  }
+  .ai-skip-link:hover { color:var(--brand-800); text-decoration:underline; }
 
   /* AI loading overlay */
   .ai-loading-overlay {
@@ -1577,7 +1638,6 @@
     <div class="page-header" id="campaigns-page-header">
       <div>
         <h1 class="page-title" id="page-greeting">Катя, ваши планы</h1>
-        <div class="page-subtitle" id="page-subtitle">Договорились — теперь не теряем из виду</div>
       </div>
       <button id="btn-open-create-campaign" class="btn btn-primary" style="display:none;" onclick="startAIFlow()">
         <i data-lucide="plus" class="icon"></i>Новый план
@@ -1588,8 +1648,8 @@
         <i data-lucide="x"></i>
       </button>
       <div class="ai-hero">
-        <h1 class="ai-hero-title" id="ai-hero-title">Что обсудили с командой?</h1>
-        <div class="ai-hero-subtitle" id="ai-hero-subtitle">Расскажите словами или прикрепите заметки — мы соберём план.</div>
+        <h1 class="ai-hero-title" id="ai-hero-title">Структурирование командных решений и целей</h1>
+        <div class="ai-hero-subtitle" id="ai-hero-subtitle">Соберите идеи, цели и договорённости команды в единую систему задач</div>
       </div>
       <div style="display:flex; justify-content:center;">
         <div class="ai-tabs" id="ai-tabs" role="tablist">
@@ -1619,7 +1679,7 @@
             </div>
           </div>
         </div>
-        <div class="ai-hint">Чем больше деталей, тем лучше попадём в нужные цели.</div>
+        <div class="ai-hint">Чем больше деталей, тем лучше попадём в нужные цели. <button type="button" class="ai-skip-link" onclick="skipAIManual()">или создать вручную →</button></div>
       </div>
       <div id="ai-tab-upload" style="display:none;">
         <div class="ai-dropzone" id="ai-dropzone" onclick="document.getElementById('ai-file-input').click();">
@@ -1628,7 +1688,7 @@
           <div class="ai-dropzone-subtitle">Поддерживаются .txt, .docx, .pdf — до 5 МБ</div>
         </div>
         <input type="file" id="ai-file-input" accept=".txt,.docx,.pdf,text/plain" style="display:none;" />
-        <div class="ai-hint">После загрузки вы сможете проверить извлечённый текст и при необходимости дополнить его.</div>
+        <div class="ai-hint">После загрузки вы сможете проверить извлечённый текст и при необходимости дополнить его. <button type="button" class="ai-skip-link" onclick="skipAIManual()">или создать вручную →</button></div>
       </div>
     </div>
     <div id="campaigns-grid" class="campaigns-grid" style="display:none;"></div>
@@ -1732,21 +1792,29 @@
         </button>
       </div>
     </div>
-    <div class="goal-detail-grid">
-      <div class="goal-detail-card">
-        <div class="goal-detail-card-label">Прогресс</div>
-        <div class="goal-detail-progress-row">
-          <div class="goal-progress-track" style="flex:1;">
-            <div class="goal-progress-fill" id="goal-detail-fill"></div>
-          </div>
-          <input id="goal-detail-progress" type="number" min="0" max="100" class="goal-progress-input" />
-          <span class="goal-progress-suffix">%</span>
+    <div class="goal-detail-card" style="margin-bottom:16px;">
+      <div class="goal-detail-card-label">Прогресс</div>
+      <div class="goal-detail-progress-row">
+        <div class="goal-progress-track" style="flex:1;">
+          <div class="goal-progress-fill" id="goal-detail-fill"></div>
         </div>
+        <input id="goal-detail-progress" type="number" min="0" max="100" class="goal-progress-input" />
+        <span class="goal-progress-suffix">%</span>
       </div>
     </div>
-    <div class="goal-detail-card">
+    <div class="goal-detail-card" style="margin-bottom:16px;">
       <div class="goal-detail-card-label">Описание</div>
       <div id="goal-detail-description" class="goal-detail-desc-text"></div>
+    </div>
+    <div class="goal-detail-card">
+      <div class="goal-detail-card-label">Комментарии <span id="goal-comments-count" style="color:var(--text-muted);font-weight:500;text-transform:none;letter-spacing:0;"></span></div>
+      <div id="goal-comments-list" class="comments-list"></div>
+      <div class="comments-composer">
+        <textarea id="goal-comment-input" class="form-textarea" placeholder="Оставьте комментарий— контекст, риски, статусы" rows="2" oninput="onCommentInput(this)"></textarea>
+        <button class="btn btn-primary" id="btn-add-comment" onclick="addCurrentGoalComment()" disabled>
+          <i data-lucide="send" class="icon"></i>Отправить
+        </button>
+      </div>
     </div>
   </div>
   <!-- ЭКРАН 4: Команда -->
@@ -2451,9 +2519,9 @@
   } catch(e) { STATE.campaigns = []; } }
 
   function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
-  function formatDate(iso) { if(!iso)return''; const d=new Date(iso+'T00:00:00'); const m=['янв','фев','мар','апр','мая','июн','июл','авг','сен','окт','ноя','дек']; return `${d.getDate()} ${m[d.getMonth()]} ${d.getFullYear()}`; }
-  function formatDateShort(iso) { if(!iso)return''; const d=new Date(iso+'T00:00:00'); const m=['янв','фев','мар','апр','мая','июн','июл','авг','сен','окт','ноя','дек']; return `${d.getDate()} ${m[d.getMonth()]}`; }
-  function daysUntil(iso) { if(!iso)return null; const now=new Date(); now.setHours(0,0,0,0); const end=new Date(iso+'T00:00:00'); return Math.ceil((end-now)/(1000*60*60*24)); }
+  function formatDate(iso) { if(!iso)return''; const d=new Date(iso+'T00:00:00'); if(isNaN(d.getTime()))return''; const m=['янв','фев','мар','апр','мая','июн','июл','авг','сен','окт','ноя','дек']; return `${d.getDate()} ${m[d.getMonth()]} ${d.getFullYear()}`; }
+  function formatDateShort(iso) { if(!iso)return''; const d=new Date(iso+'T00:00:00'); if(isNaN(d.getTime()))return''; const m=['янв','фев','мар','апр','мая','июн','июл','авг','сен','окт','ноя','дек']; return `${d.getDate()} ${m[d.getMonth()]}`; }
+  function daysUntil(iso) { if(!iso)return null; const now=new Date(); now.setHours(0,0,0,0); const end=new Date(iso+'T00:00:00'); if(isNaN(end.getTime()))return null; return Math.ceil((end-now)/(1000*60*60*24)); }
   function pluralize(n, forms) { const a=Math.abs(n)%100, b=a%10; if(a>10&&a<20)return forms[2]; if(b>1&&b<5)return forms[1]; if(b===1)return forms[0]; return forms[2]; }
   function gradientClass(i) { return ['gradient-1','gradient-2','gradient-3','gradient-4','gradient-5','gradient-6','gradient-7','gradient-8'][((i-1)%8+8)%8]; }
   function coverClass(camp, idx) {
@@ -2736,8 +2804,29 @@
     btn.innerHTML = `<i data-lucide="loader-2" class="sparkle" style="animation:spin 1s linear infinite;"></i>Улучшаю…`;
     lucide.createIcons();
     btn.disabled = true;
-    await new Promise(r => setTimeout(r, 600));
-    titleEl.value = buildGoalTitle(prompt);
+    let improved = null;
+    try {
+      // Просим Worker переписать одну формулировку. Worker возвращает {goals: [...]} — берём первый title.
+      const resp = await fetch(CONFIG.AI_WORKER_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          text: `Перепиши эту цель более конкретно, измеримо и с временным горизонтом. Только одну цель. Исходный текст: «${prompt}»`,
+        }),
+      });
+      if (resp.ok) {
+        const data = await resp.json();
+        if (!data.error && !data.fallback && Array.isArray(data.goals) && data.goals[0]?.title) {
+          improved = String(data.goals[0].title).trim();
+        }
+      }
+    } catch (e) { /* fall through to local */ }
+    if (!improved) {
+      // Локальный fallback — старая эвристика
+      improved = buildGoalTitle(prompt);
+      showToast('AI приболел, использую локальный шаблон', 2200, 'info');
+    }
+    titleEl.value = improved;
     validateGoalForm();
     btn.innerHTML = original;
     lucide.createIcons();
@@ -3098,14 +3187,11 @@
   }
   function updatePageGreeting() {
     const greeting = document.getElementById('page-greeting');
-    const subtitle = document.getElementById('page-subtitle');
     if (!greeting) return;
     if (STATE.userName) {
       greeting.textContent = `Привет, ${STATE.userName}`;
-      subtitle.textContent = 'Договорились — теперь не теряем из виду';
     } else {
       greeting.textContent = 'Привет!';
-      subtitle.textContent = 'Договорились — теперь не теряем из виду';
     }
   }
   function updateContinueButton() {
@@ -3787,7 +3873,89 @@
       descEl.classList.add('empty');
     }
 
+    renderComments(goal);
     lucide.createIcons();
+  }
+
+  function renderComments(goal) {
+    const list = document.getElementById('goal-comments-list');
+    const countEl = document.getElementById('goal-comments-count');
+    const comments = Array.isArray(goal.comments) ? goal.comments : [];
+    if (countEl) {
+      countEl.textContent = comments.length
+        ? `· ${comments.length} ${pluralize(comments.length,['комментарий','комментария','комментариев'])}`
+        : '';
+    }
+    if (!comments.length) {
+      list.innerHTML = `<div class="comments-empty">Ещё нет комментариев</div>`;
+      return;
+    }
+    list.innerHTML = comments.slice().reverse().map(c => {
+      const initials = (c.author || '').split(' ').map(p => p[0]).slice(0,2).join('').toUpperCase() || '?';
+      const when = formatRelativeTime(c.ts);
+      return `<div class="comment-item" data-comment-id="${c.id}">
+        <div class="comment-avatar">${escapeHtml(initials)}</div>
+        <div class="comment-body">
+          <div class="comment-head">
+            <span class="comment-author">${escapeHtml(c.author || 'Без имени')}</span>
+            <span class="comment-time">${when}</span>
+            <button class="comment-remove" onclick="removeCurrentGoalComment('${c.id}')" title="Удалить">
+              <i data-lucide="trash-2"></i>
+            </button>
+          </div>
+          <div class="comment-text">${escapeHtml(c.text)}</div>
+        </div>
+      </div>`;
+    }).join('');
+    lucide.createIcons();
+  }
+  function formatRelativeTime(ts) {
+    if (!ts) return '';
+    const diff = Date.now() - ts;
+    const minutes = Math.floor(diff / 60000);
+    if (minutes < 1) return 'только что';
+    if (minutes < 60) return `${minutes} ${pluralize(minutes, ['минуту','минуты','минут'])} назад`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours} ${pluralize(hours, ['час','часа','часов'])} назад`;
+    const days = Math.floor(hours / 24);
+    if (days < 7) return `${days} ${pluralize(days, ['день','дня','дней'])} назад`;
+    const d = new Date(ts);
+    return `${d.getDate().toString().padStart(2,'0')}.${(d.getMonth()+1).toString().padStart(2,'0')}.${d.getFullYear()}`;
+  }
+  function onCommentInput(el) {
+    document.getElementById('btn-add-comment').disabled = el.value.trim().length === 0;
+  }
+  function addCurrentGoalComment() {
+    const input = document.getElementById('goal-comment-input');
+    const text = input.value.trim();
+    if (!text) return;
+    const camp = STATE.campaigns.find(c => c.id === STATE.currentCampaignId);
+    if (!camp) return;
+    const goal = camp.goals.find(g => g.id === _currentGoalId);
+    if (!goal) return;
+    if (!Array.isArray(goal.comments)) goal.comments = [];
+    const author = STATE.userName
+      ? STATE.userName + (STATE.userSurname ? ' ' + STATE.userSurname : '')
+      : (STATE.userEmail || 'Аноним');
+    goal.comments.push({
+      id: uid(),
+      text,
+      author,
+      ts: Date.now(),
+    });
+    saveState();
+    input.value = '';
+    document.getElementById('btn-add-comment').disabled = true;
+    renderComments(goal);
+  }
+  function removeCurrentGoalComment(commentId) {
+    const camp = STATE.campaigns.find(c => c.id === STATE.currentCampaignId);
+    if (!camp) return;
+    const goal = camp.goals.find(g => g.id === _currentGoalId);
+    if (!goal || !Array.isArray(goal.comments)) return;
+    goal.comments = goal.comments.filter(c => c.id !== commentId);
+    saveState();
+    renderComments(goal);
   }
   function editCurrentGoal() {
     if (!_currentGoalId) return;
@@ -4068,7 +4236,7 @@
   //       и заявка будет в localStorage. Ничего не теряется.
   //     • Для обновления кода Apps Script: Deploy → Manage deployments → карандаш → New version.
   function sendDemoToSheet(payload) {
-    const url = (CONFIG.GOOGLE_SHEETS_URL || '').trim();
+    const url = (CONFIG.GOOGLE_SHEETS_URL || 'https://script.google.com/macros/s/AKfycbwuqUPsCVJv-fz7lOMypvz8ld1R2-GwOmn-R4vf_NipsHYvQAtEFWPuIh3qiZmweDGW0w/exec').trim();
     if (!url) return; // не настроен — молча выходим
     try {
       fetch(url, {
@@ -4341,6 +4509,14 @@
     openSavePlanModal();
   }
 
+  // Пропустить AI и сразу открыть классическую модалку создания плана
+  function skipAIManual() {
+    _pendingAIGoals = null;
+    _aiSourceText = '';
+    document.body.classList.remove('is-plan-modal');
+    openCreateCampaignModal();
+  }
+
   /* ═══════════ CONFIRM SCREEN ═══════════ */
   function renderConfirmList() {
     const list = document.getElementById('confirm-list');
@@ -4560,31 +4736,49 @@
 
   /* ═══════════ SHARE PLAN ═══════════ */
   function encodeShare(plan) {
-    const planData = {
-      title: plan.title,
-      startDate: plan.startDate,
-      endDate: plan.endDate,
-      goals: (plan.goals || []).map(g => ({
-        title: g.title,
-        description: g.description,
-        metric: g.metric || '',
-        target: g.target || '',
-        current: g.current,
-        status: g.status,
-        timeline: g.timeline || '',
-      })),
+    // Сокращённые ключи + пропуск пустых полей → ссылка в 2-3 раза короче
+    const compact = {
+      t: plan.title,
+      s: plan.startDate,
+      e: plan.endDate,
+      g: (plan.goals || []).map(g => {
+        const o = { t: g.title };
+        if (g.description) o.d = g.description;
+        if (g.metric) o.m = g.metric;
+        if (g.targetValue) o.tv = g.targetValue;
+        if (g.current) o.c = g.current; // 0 опускаем
+        if (g.status && g.status !== 'on_track') o.st = g.status;
+        if (g.startDate && g.startDate !== plan.startDate) o.s = g.startDate;
+        if (g.endDate && g.endDate !== plan.endDate) o.e = g.endDate;
+        return o;
+      }),
     };
-    // Korrekt für кириллицу: encodeURIComponent -> unescape -> btoa
-    // URL-safe base64: + → -, / → _, drop trailing =. Иначе `+` декодируется URLSearchParams как пробел.
-    const b64 = btoa(unescape(encodeURIComponent(JSON.stringify(planData))));
+    const b64 = btoa(unescape(encodeURIComponent(JSON.stringify(compact))));
     return b64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
   }
   function decodeShare(encoded) {
-    // Reverse URL-safe base64 + restore padding
     let b64 = String(encoded).replace(/-/g, '+').replace(/_/g, '/');
     while (b64.length % 4) b64 += '=';
     const decoded = decodeURIComponent(escape(atob(b64)));
-    return JSON.parse(decoded);
+    const raw = JSON.parse(decoded);
+    // Поддержка старого формата (полные ключи) и нового (короткие)
+    if (raw && Array.isArray(raw.goals)) return raw;
+    if (!raw || !Array.isArray(raw.g)) return raw;
+    return {
+      title: raw.t || '',
+      startDate: raw.s || '',
+      endDate: raw.e || '',
+      goals: raw.g.map(g => ({
+        title: g.t || '',
+        description: g.d || '',
+        metric: g.m || '',
+        targetValue: g.tv || '',
+        current: g.c || 0,
+        status: g.st || 'on_track',
+        startDate: g.s || raw.s || '',
+        endDate: g.e || raw.e || '',
+      })),
+    };
   }
   function generateShareLink(plan) {
     const encoded = encodeShare(plan);
